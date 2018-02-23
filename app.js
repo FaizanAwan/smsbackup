@@ -12,6 +12,19 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
    console.log('%s listening to %s', server.name, server.url); 
 });
   
+var documentDbOptions = {
+    host: 'https://myndb.documents.azure.com:443/', 
+    masterKey: 'tgLChriPoyX1XzRKNMEJR3weBrqcykiBYEKjDtEclhTWi9s3Os5b5CJGg5OcdjOXOEPQZYuTqTU0k35jcuK4gQ==', 
+    database: 'botdocs',   
+    collection: 'botdata'
+};
+
+
+var docDbClient = new botbuilder_azure.DocumentDbClient(documentDbOptions);
+
+var cosmosStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, docDbClient);
+
+
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: process.env.MicrosoftAppId,
@@ -39,7 +52,7 @@ var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azu
 var bot = new builder.UniversalBot(connector, function (session, args) {
     session.send('You reached the default message handler. You said \'%s\'.', session.message.text);
 });
-bot.set('storage', tableStorage);
+bot.set('storage', cosmosStorage);
 
 // Make sure you add code to validate these fields
 var luisAppId = process.env.LuisAppId;
@@ -52,6 +65,9 @@ const LuisModelUrl = 'https://' + luisAPIHostName + '/luis/v1/application?id=' +
 var recognizer = new builder.LuisRecognizer(LuisModelUrl);
 // Add the recognizer to the bot
 bot.recognizer(recognizer);
+
+
+
 
 
 
