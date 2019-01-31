@@ -1,6 +1,10 @@
 /*-----------------------------------------------------------------------------
 A simple echo bot for the Microsoft Bot Framework. 
 -----------------------------------------------------------------------------*/
+require('dotenv-extended').load();
+
+var spellService = require('./spell-service');
+
 
 var restify = require('restify');
 var builder = require('botbuilder');
@@ -11,7 +15,27 @@ var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
    console.log('%s listening to %s', server.name, server.url); 
 });
-  
+
+// Spell Check
+if (process.env.IS_SPELL_CORRECTION_ENABLED === 'true') {
+    bot.use({
+        botbuilder: function (session, next) {
+            spellService
+                .getCorrectedText(session.message.text)
+                .then(function (text) {
+                    session.message.text = text;
+                    next();
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    next();
+                });
+        }
+    });
+}
+
+
+
 var documentDbOptions = {
     host: 'https://myndb.documents.azure.com:443/', 
     masterKey: 'tgLChriPoyX1XzRKNMEJR3weBrqcykiBYEKjDtEclhTWi9s3Os5b5CJGg5OcdjOXOEPQZYuTqTU0k35jcuK4gQ==', 
@@ -52,7 +76,23 @@ var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azu
 var bot = new builder.UniversalBot(connector, function (session, args) {
     session.send('You reached the default message handler. You said \'%s\'.', session.message.text);
 });
-bot.set('storage', cosmosStorage);
+bot.set('storage', tableStorage);
+
+
+// var mongo = require('mongodb');
+// var version = mongo.version;
+
+// console.log(version);
+
+
+// var MongoClient = require('mongodb').MongoClient;
+
+// var uri = "mongodb+srv://Nayatel1234:5ia8h7JyGA2lEt4F@Cluster0.mongodb.net/test";
+// MongoClient.connect(uri, function(err, client) {
+//    const collection = client.db("test").collection("devices");
+//    // perform actions on the collection object
+//    client.close();
+// });
 
 // Make sure you add code to validate these fields
 var luisAppId = process.env.LuisAppId;
